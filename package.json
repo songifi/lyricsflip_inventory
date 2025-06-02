@@ -24,6 +24,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "multer": "^1.4.5-lts.1",
+    "nanoid": "^5.1.5",
     "pg": "^8.11.3",
     "typeorm": "^0.3.17"
   },
