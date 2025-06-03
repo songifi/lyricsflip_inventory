@@ -20,16 +20,19 @@
     "@nestjs/core": "^10.0.0",
     "@nestjs/mapped-types": "^2.0.0",
     "@nestjs/platform-express": "^10.0.0",
-    "@nestjs/typeorm": "^10.0.0",
+    "@nestjs/terminus": "^11.0.0",
+    "@nestjs/typeorm": "^10.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "multer": "^1.4.5-lts.1",
     "pg": "^8.11.3",
-    "typeorm": "^0.3.17"
+    "systeminformation": "^5.27.1",
+    "typeorm": "^0.3.24"
   },
   "devDependencies": {
     "@types/multer": "^1.4.7",
     "@types/node": "^22.15.29",
-    "@types/pg": "^8.10.2"
+    "@types/pg": "^8.10.2",
+    "@types/systeminformation": "^3.23.1"
   }
 }
