@@ -1,0 +1,19 @@
+POST /notifications/send
+
+{
+  "userId": "330",
+  "type": "password_reset",
+  "context": { "resetUrl": "https://app.com/reset/abc" }
+}
+
+GET /user/notification-preferences/123
+
+
+PUT /user/notification-preferences/123
+{
+  "preferences": {
+    "password_reset": { "email": true, "sms": false, "inApp": true },
+    "marketing": { "email": false, "sms": false, "inApp": true }
+  }
+}
+
