@@ -5,8 +5,16 @@ import { ValidationPipe } from "@nestjs/common";
 import { AllExceptionsFilter } from "utils/exceptions.filter";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
+import { GlobalExceptionFilter } from './filters/http-exception.filter';
+import { Logger } from "winston";
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  app.useGlobalFilters(new GlobalExceptionFilter(app.get(Logger)));
+
   const { httpAdapter } = app.get(HttpAdapterHost);
 
   // CORS configuration
