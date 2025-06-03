@@ -1,3 +1,4 @@
+import { Supplier } from "src/supplier/entities/supplier.entity";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,6 +6,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
 
 export enum ProductType {
@@ -154,6 +157,13 @@ export class Product {
 
   @Column("boolean", { default: true })
   isVisible: boolean;
+
+  @Column({ nullable: true })
+  supplierId: string;
+
+  @ManyToOne(() => Supplier, (supplier) => supplier.products, { eager: true })
+  @JoinColumn({ name: "supplierId" })
+  supplier: Supplier;
 
   @Column("boolean", { default: false })
   isFeatured: boolean;
