@@ -7,6 +7,8 @@ import { PharmacyModule } from './pharmacy/pharmacy.module';
 import { ProductsModule } from './products/products.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { HealthModule } from './health/health.module';
+import { NotificationModule } from './notification/notification.module';
+import { PreferenceModule } from './preference/preference.module';
 
 @Module({
 	imports: [
@@ -39,6 +41,8 @@ import { HealthModule } from './health/health.module';
 		ProductsModule,
 		SupplierModule,
 		HealthModule,
+		NotificationModule,
+		PreferenceModule,
 	],
 })
 export class AppModule {}
