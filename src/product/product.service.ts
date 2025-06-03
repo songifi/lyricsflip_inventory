@@ -16,12 +16,14 @@ import {
 } from './dto/bulk-product.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { BarcodeService } from './barcode.service';
 
 @Injectable()
 export class ProductService {
 	constructor(
 		@InjectRepository(Product)
-		private productRepository: Repository<Product>
+		private productRepository: Repository<Product>,
+		private readonly barcodeService: BarcodeService,
 	) {}
 
 	async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -226,4 +228,21 @@ export class ProductService {
 
 		return result.map((item) => item.brand);
 	}
+
+	async createProduct(data: CreateProductDto): Promise<Product> {
+		const barcode = await this.barcodeService.generateProductBarcode();
+	
+		const product = this.productRepository.create({ ...data, barcode });
+		return this.productRepository.save(product);
+	  }
+
+	  async findProductByBarcode(barcode: string): Promise<Product> {
+		const product = await this.productRepository.findOneBy({ barcode });
+		if (!product) {
+		  throw new NotFoundException(`Product with barcode ${barcode} not found`);
+		}
+		return product;
+	  }
+	  
+	  
 }

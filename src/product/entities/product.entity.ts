@@ -37,6 +37,9 @@ export class Product {
   @Column('boolean', { default: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  barcode: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
