@@ -12,7 +12,11 @@
     "format": "prettier --write 'src/**/*.ts'",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
+    "migration:generate": "typeorm migration:generate src/migrations/Init",
+    "migration:run": "typeorm migration:run",
+    "migration:revert": "typeorm migration:revert"
   },
   "dependencies": {
     "@nest-lab/throttler-storage-redis": "^1.1.0",
@@ -23,6 +27,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/mapped-types": "^2.0.0",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/schedule": "^6.0.0",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/terminus": "^11.0.0",
     "@nestjs/throttler": "^6.4.0",
@@ -34,16 +39,22 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "exceljs": "^4.4.0",
+
     "handlebars": "^4.7.8",
     "helmet": "^8.1.0",
-    "exceljs": "^4.4.0",
     "ioredis": "^5.6.1",
     "multer": "^1.4.5-lts.1",
     "nanoid": "^5.1.5",
+    "pg": "^8.16.0",
+    "nest-winston": "^1.10.2",
     "pg": "^8.11.3",
     "systeminformation": "^5.27.1",
     "twilio": "^5.7.0",
     "typeorm": "^0.3.24"
+    "typeorm": "^0.3.24",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
