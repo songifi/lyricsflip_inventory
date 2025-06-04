@@ -1,4 +1,21 @@
 
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { Product } from "./product/entities/product.entity";
+import { ProductModule } from "./product/product.module";
+import { PharmacyModule } from "./pharmacy/pharmacy.module";
+import { ReportModule } from "./report/report.module";
+import { ProductsModule } from "./products/products.module";
+import { SupplierModule } from "./supplier/supplier.module";
+import { HealthModule } from "./health/health.module";
+import { NotificationModule } from "./notification/notification.module";
+import { PreferenceModule } from "./preference/preference.module";
+import configuration from "./config/configuration";
+
+@Module({
+
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -69,10 +86,12 @@ import { NotificationModule } from "./notification/notification.module";
 import { PreferenceModule } from "./preference/preference.module";
 
 @Module({
+
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ".env",
+      load: [configuration],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -101,7 +120,9 @@ import { PreferenceModule } from "./preference/preference.module";
     SupplierModule,
     HealthModule,
     NotificationModule,
+
 		PreferenceModule,
+
     PreferenceModule,
   ],
 })
