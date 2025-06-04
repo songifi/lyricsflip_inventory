@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { CycleCount, CycleCountStatus } from '../entities/cycle-count.entity';
 import { CycleCountItem } from '../entities/cycle-count-item.entity';
 import { CreateCycleCountDto } from '../dto/create-cycle-count.dto';
@@ -118,4 +118,11 @@ export class CycleCountService {
 
   async findOne(id: string): Promise<CycleCount> {
     const cycleCount = await this.cycleCountRepository.findOne({
-      where:
+      where: { id }
+    });
+    if (!cycleCount) {
+      throw new NotFoundException('Cycle count not found');
+    }
+    return cycleCount;
+  }
+}

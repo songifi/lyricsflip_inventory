@@ -1,3 +1,5 @@
+import { Entity, Column, PrimaryGeneratedColumn, UpdateDateColumn, CreateDateColumn } from 'typeorm';
+
 @Entity('stock_levels')
 export class StockLevel {
   @PrimaryGeneratedColumn('uuid')

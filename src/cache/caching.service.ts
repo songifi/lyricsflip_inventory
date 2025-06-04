@@ -1,4 +1,3 @@
-
 import { Injectable, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -21,7 +20,11 @@ export class CachingService {
 
     this.cacheMetrics.incrementMiss();
     const result = await fn();
-    await this.cacheManager.set(key, result, { ttl });
+    if (ttl !== undefined) {
+      await this.cacheManager.set(key, result, { ttl });
+    } else {
+      await this.cacheManager.set(key, result);
+    }
     return result;
   }
 

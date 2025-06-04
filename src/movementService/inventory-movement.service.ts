@@ -1,28 +1,30 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, In, Between } from 'typeorm';
-import { InventoryMovement, MovementType, MovementStatus, MovementPriority } from './inventory-movement.entity';
-import { StockLevel } from './stock-level.entity';
-import { StockReservation } from './stock-reservation.entity';
-import { StockAlert, AlertType, AlertStatus } from './stock-alert.entity';
-import { BatchTracking } from './batch-tracking.entity';
-import { CreateMovementDto, TransferStockDto, BulkMovementDto, ReserveStockDto, UpdateStockLevelsDto } from './inventory-movement.dto';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InventoryMovement, MovementStatus, MovementType, MovementPriority } from './entities/inventory-movement.entity';
+import { StockLevel } from './entities/stock-level.entity';
+import { BulkMovementDto, ReserveStockDto, UpdateStockLevelsDto } from './entities/inventory-movement.dto';
+import { DataSource, QueryRunner, Between, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { StockAlert, AlertType, AlertStatus } from './entities/stock-alert.entity';
+import { StockReservation } from './entities/stock-reservation.entity';
+import { BatchHistory } from './entities/batch-history.entity';
 
 @Injectable()
 export class InventoryMovementService {
   constructor(
     @InjectRepository(InventoryMovement)
-    private movementRepository: Repository<InventoryMovement>,
+    private readonly movementRepository: Repository<InventoryMovement>,
     @InjectRepository(StockLevel)
-    private stockLevelRepository: Repository<StockLevel>,
+    private readonly stockLevelRepository: Repository<StockLevel>,
     @InjectRepository(StockReservation)
-    private reservationRepository: Repository<StockReservation>,
+    private readonly reservationRepository: Repository<StockReservation>,
     @InjectRepository(StockAlert)
-    private alertRepository: Repository<StockAlert>,
+    private readonly alertRepository: Repository<StockAlert>,
     @InjectRepository(BatchTracking)
-    private batchRepository: Repository<BatchTracking>,
-    private dataSource: DataSource,
+    private readonly batchRepository: Repository<BatchTracking>,
+    private readonly dataSource: DataSource,
+    @Inject(forwardRef(() => AlertingService))
+    private readonly alertingService: AlertingService,
   ) {}
 
   // Enhanced stock operations with approval workflow
@@ -217,6 +219,20 @@ export class InventoryMovementService {
   }
 
   // Advanced stock level management
+
+  /**
+   * Scheduled job: runs every 10 minutes to check all stock levels for low stock and generate alerts
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async scheduledLowStockCheck() {
+    const allStockLevels = await this.stockLevelRepository.find();
+    for (const stock of allStockLevels) {
+      await this.checkStockAlerts(stock);
+    }
+  }
+  /**
+   * Updates stock levels and checks for low stock alerts
+   */
   async updateStockLevels(dto: UpdateStockLevelsDto): Promise<StockLevel> {
     const stockLevel = await this.getStockLevel(dto.productId, dto.locationId);
     
@@ -224,7 +240,7 @@ export class InventoryMovementService {
     if (dto.maxStockLevel !== undefined) stockLevel.maxStockLevel = dto.maxStockLevel;
     if (dto.reorderPoint !== undefined) stockLevel.reorderPoint = dto.reorderPoint;
 
-    await this.checkStockAlerts(stockLevel);
+    await this.checkStockAlerts(stockLevel); // This will also trigger notification if needed
     
     return this.stockLevelRepository.save(stockLevel);
   }
@@ -255,11 +271,71 @@ export class InventoryMovementService {
     };
   }
 
+  /**
+   * Checks stock level and creates or resolves alerts as needed. Notifies via AlertingService if alert is triggered.
+   * @param stockLevel StockLevel entity
+   */
+  private async checkStockAlerts(stockLevel: StockLevel): Promise<void> {
+    // Check for low stock
+    if (stockLevel.quantity <= stockLevel.minStockLevel) {
+      // Check if alert already exists and is active
+      let alert = await this.alertRepository.findOne({
+        where: {
+          productId: stockLevel.productId,
+          locationId: stockLevel.locationId,
+          type: AlertType.LOW_STOCK,
+          status: AlertStatus.ACTIVE,
+        },
+      });
+      if (!alert) {
+        alert = this.alertRepository.create({
+          type: AlertType.LOW_STOCK,
+          status: AlertStatus.ACTIVE,
+          productId: stockLevel.productId,
+          locationId: stockLevel.locationId,
+          message: `Low stock for product ${stockLevel.productId} at location ${stockLevel.locationId}. Current: ${stockLevel.quantity}, Threshold: ${stockLevel.minStockLevel}`,
+          currentQuantity: stockLevel.quantity,
+          thresholdQuantity: stockLevel.minStockLevel,
+        });
+        await this.alertRepository.save(alert);
+        // Notify via AlertingService
+        await this.alertingService.sendAlert({
+          type: 'LOW_STOCK',
+          severity: 'HIGH',
+          message: alert.message,
+          details: {
+            productId: stockLevel.productId,
+            locationId: stockLevel.locationId,
+            currentQuantity: stockLevel.quantity,
+            thresholdQuantity: stockLevel.minStockLevel,
+          },
+        });
+      }
+    } else {
+      // Resolve any active low stock alert if stock is now sufficient
+      const alert = await this.alertRepository.findOne({
+        where: {
+          productId: stockLevel.productId,
+          locationId: stockLevel.locationId,
+          type: AlertType.LOW_STOCK,
+          status: AlertStatus.ACTIVE,
+        },
+      });
+      if (alert) {
+        alert.status = AlertStatus.RESOLVED;
+        await this.alertRepository.save(alert);
+      }
+    }
+  }
+
   // Batch tracking
+  /**
+   * Create a batch with validation, auto-lot generation, and history logging
+   */
   async createBatch(
     productId: string,
     locationId: string,
-    batchNumber: string,
+    batchNumber: string | undefined,
     quantity: number,
     options: {
       manufacturedDate?: Date;
@@ -268,15 +344,34 @@ export class InventoryMovementService {
       unitCost?: number;
     } = {}
   ): Promise<BatchTracking> {
+    // Require expiry date
+    if (!options.expiryDate) {
+      throw new BadRequestException('Expiry date is required for batch creation.');
+    }
+    // Use manufacturedDate for batch number generation, default to now
+    const manufacturedDate = options.manufacturedDate || new Date();
+    // Generate batch number if not provided
+    const finalBatchNumber = batchNumber || generateBatchNumber(productId, manufacturedDate);
+    // Enforce unique batch number per product
+    const exists = await this.batchRepository.findOne({ where: { productId, batchNumber: finalBatchNumber } });
+    if (exists) {
+      throw new ConflictException('Batch number must be unique per product.');
+    }
     const batch = this.batchRepository.create({
       productId,
       locationId,
-      batchNumber,
+      batchNumber: finalBatchNumber,
       quantity,
       ...options
     });
-
-    return this.batchRepository.save(batch);
+    const saved = await this.batchRepository.save(batch);
+    // Log to history
+    await this.dataSource.getRepository(BatchHistory).save({
+      batchId: saved.id,
+      action: 'CREATED',
+      details: saved
+    });
+    return saved;
   }
 
   async getBatchesByProduct(productId: string, locationId?: string): Promise<BatchTracking[]> {
@@ -289,17 +384,38 @@ export class InventoryMovementService {
     });
   }
 
+  /**
+   * Get batches expiring within a given number of days. Also auto-inactivate expired batches and log.
+   */
   async getExpiringBatches(days = 30): Promise<BatchTracking[]> {
+    const now = new Date();
     const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + days);
-
-    return this.batchRepository.find({
+    futureDate.setDate(now.getDate() + days);
+    // Find expiring
+    const expiring = await this.batchRepository.find({
       where: {
-        expiryDate: Between(new Date(), futureDate),
+        expiryDate: Between(now, futureDate),
         isActive: true
       },
       order: { expiryDate: 'ASC' }
     });
+    // Auto-inactivate and log expired batches
+    const expired = await this.batchRepository.find({
+      where: {
+        expiryDate: Between(new Date('1900-01-01'), now),
+        isActive: true
+      }
+    });
+    for (const batch of expired) {
+      batch.isActive = false;
+      await this.batchRepository.save(batch);
+      await this.dataSource.getRepository(BatchHistory).save({
+        batchId: batch.id,
+        action: 'EXPIRED',
+        details: batch
+      });
+    }
+    return expiring;
   }
 
   // Analytics and reporting
@@ -325,4 +441,4 @@ export class InventoryMovementService {
       stockIn: movements.filter(m => m.type === MovementType.STOCK_IN).length,
       stockOut: movements.filter(m => m.type === MovementType.STOCK_OUT).length,
       transfers: movements.filter(m => m.type === MovementType.TRANSFER).length,
-      adjustments: movements.filter(m =>
+      adjustments: movements.filter(m => m.type === MovementType.ADJUSTMENT).length,
