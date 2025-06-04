@@ -57,7 +57,7 @@ export class StorageLocationService {
       where: { 
         warehouseId, 
         type: LocationType.ZONE,
-        parentLocationId: null 
+        parentLocationId: undefined 
       },
       relations: ['childLocations', 'childLocations.childLocations'],
       order: { code: 'ASC' }

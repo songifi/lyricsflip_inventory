@@ -1,20 +1,25 @@
-import { IsString, IsNotEmpty, IsEmail, IsUUID, IsOptional, IsDateString, IsArray, ValidateNested, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsUUID, IsOptional, IsDateString, IsArray, ValidateNested, MaxLength, IsInt, Min, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePurchaseOrderItemDto {
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   sku: string;
 
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   productName: string;
 
+  @ApiProperty()
   @IsInt()
+@IsInt()
   @Min(1)
   orderedQuantity: number;
 
-  @IsDecimal()
+  @IsNumber()
   unitPrice: number;
 
   @IsString()

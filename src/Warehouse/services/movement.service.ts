@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { InventoryMovement, MovementType, MovementStatus } from '../entities/inventory-movement.entity';
 import { CreateInventoryMovementDto } from '../dto/create-inventory-movement.dto';
 import { InventoryService } from './inventory.service';
