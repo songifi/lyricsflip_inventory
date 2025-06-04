@@ -1,83 +1,27 @@
-async getMovementAnalytics(
-    startDate: Date,
-    endDate: Date,
-    productId?: string,
-    locationId?: string
-  ): Promise<any> {
-    const query = this.movementRepository.createQueryBuilder('movement')
-      .where('movement.createdAt BETWEEN :startDate AND :endDate', { startDate, endDate })
-      .andWhere('movement.status = :status', { status: MovementStatus.COMPLETED });
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { InventoryMovementService } from './inventory-movement.service';
+import { InventoryMovementController } from './inventory-movement.controller';
+import { InventoryMovement } from './entities/inventory-movement.entity';
+import { StockLevel } from './entities/stock-level.entity';
+import { StockAlert } from './entities/stock-alert.entity';
+import { StockReservation } from './entities/stock-reservation.entity';
 
-    if (productId) query.andWhere('movement.productId = :productId', { productId });
-    if (locationId) {
-      query.andWhere('(movement.fromLocationId = :locationId OR movement.toLocationId = :locationId)', { locationId });
-    }
-
-    const movements = await query.getMany();
-
-    const analytics = {
-      totalMovements: movements.length,
-      stockIn: movements.filter(m => m.type === MovementType.STOCK_IN).length,
-      stockOut: movements.filter(m => m.type === MovementType.STOCK_OUT).length,
-      transfers: movements.filter(m => m.type === MovementType.TRANSFER).length,
-      adjustments: movements.filter(m => m.type === MovementType.ADJUSTMENT).length,
-      totalQuantityIn: movements
-        .filter(m => m.type === MovementType.STOCK_IN)
-        .reduce((sum, m) => sum + Number(m.quantity), 0),
-      totalQuantityOut: movements
-        .filter(m => m.type === MovementType.STOCK_OUT)
-        .reduce((sum, m) => sum + Number(m.quantity), 0),
-      averageMovementValue: movements
-        .filter(m => m.unitCost)
-        .reduce((sum, m) => sum + (Number(m.quantity) * Number(m.unitCost)), 0) / movements.length || 0,
-      movementsByDay: this.groupMovementsByDay(movements),
-      topProducts: this.getTopMovedProducts(movements)
-    };
-
-    return analytics;
-  }
-
-  private groupMovementsByDay(movements: InventoryMovement[]): any[] {
-    const grouped = movements.reduce((acc, movement) => {
-      const date = movement.createdAt.toISOString().split('T')[0];
-      if (!acc[date]) {
-        acc[date] = { date, count: 0, stockIn: 0, stockOut: 0, transfers: 0 };
-      }
-      acc[date].count++;
-      acc[date][movement.type.toLowerCase().replace('_', '')] = (acc[date][movement.type.toLowerCase().replace('_', '')] || 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.values(grouped).sort((a: any, b: any) => a.date.localeCompare(b.date));
-  }
-
-  private getTopMovedProducts(movements: InventoryMovement[]): any[] {
-    const productMovements = movements.reduce((acc, movement) => {
-      if (!acc[movement.productId]) {
-        acc[movement.productId] = { productId: movement.productId, count: 0, totalQuantity: 0 };
-      }
-      acc[movement.productId].count++;
-      acc[movement.productId].totalQuantity += Number(movement.quantity);
-      return acc;
-    }, {});
-
-    return Object.values(productMovements)
-      .sort((a: any, b: any) => b.count - a.count)
-      .slice(0, 10);
-  }
-
-  // Stock alerts and monitoring
-  private async checkStockAlerts(stockLevel: StockLevel): Promise<void> {
-    const alerts = [];
-
-    // Check for low stock
-    if (stockLevel.quantity <= stockLevel.reorderPoint && stockLevel.quantity > 0) {
-      alerts.push({
-        type: AlertType.LOW_STOCK,
-        productId: stockLevel.productId,
-        locationId: stockLevel.locationId,
-        message: `Low stock alert: ${stockLevel.quantity} units remaining (reorder point: ${stockLevel.reorderPoint})`,
-        currentQuantity: stockLevel.quantity,
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      InventoryMovement,
+      StockLevel,
+      StockAlert,
+      StockReservation
+    ])
+  ],
+  controllers: [InventoryMovementController],
+  providers: [InventoryMovementService],
+  exports: [InventoryMovementService]
+})
+export class InventoryMovementModule {}
+      currentQuantity: stockLevel.quantity,
         thresholdQuantity: stockLevel.reorderPoint
       });
       stockLevel.isLowStock = true;
@@ -247,27 +191,19 @@ async getMovementAnalytics(
       };
     }
 
-    const daysUntilStockout = avgDailyConsumption > 0 
-      ? Math.floor(stockLevel.availableQuantity / avgDailyConsumption)
-      : Infinity;
-
-    const forecastedConsumption = avgDailyConsumption * forecastDays;
-    const recommendedOrder = Math.max(0, forecastedConsumption - stockLevel.availableQuantity);
-
     return {
-      currentStock: stockLevel.availableQuantity,
-      avgDailyConsumption,
-      daysUntilStockout,
       forecastedConsumption,
       recommendedOrder,
       forecast: daysUntilStockout < forecastDays 
         ? `Stock will run out in ${daysUntilStockout} days. Recommend ordering ${Math.ceil(recommendedOrder)} units.`
         : `Stock sufficient for ${forecastDays} days.`
     };
-  }
+  
 
   // Complete missing methods
-  private async stockIn(movement: InventoryMovement): Promise<InventoryMovement> {
+  // ...
+  // (All other service methods remain inside this class)
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -502,9 +438,6 @@ async getMovementAnalytics(
   }
 }
 
-// Extended Controller with additional endpoints
-@Controller('inventory')
-export class ExtendedInventoryController {
   constructor(private readonly inventoryService: InventoryMovementService) {}
 
   // Movement approval endpoints
@@ -562,7 +495,7 @@ export class ExtendedInventoryController {
   async createBatch(@Body() body: {
     productId: string;
     locationId: string;
-    batchNumber: string;
+    batchNumber?: string; // Optional for auto-generation
     quantity: number;
     manufacturedDate?: Date;
     expiryDate?: Date;
@@ -583,6 +516,17 @@ export class ExtendedInventoryController {
     );
   }
 
+  /**
+   * Get audit/history for a batch
+   */
+  @Get('batches/:batchId/history')
+  async getBatchHistory(@Param('batchId') batchId: string) {
+    return this.inventoryService['dataSource'].getRepository(BatchHistory).find({
+      where: { batchId },
+      order: { createdAt: 'ASC' }
+    });
+  }
+
   @Get('batches/product/:productId')
   async getBatchesByProduct(
     @Param('productId') productId: string,
@@ -600,22 +544,6 @@ export class ExtendedInventoryController {
   @Get('analytics/movements')
   async getMovementAnalytics(
     @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-    @Query('productId') productId?: string,
-    @Query('locationId') locationId?: string
-  ) {
-    return this.inventoryService.getMovementAnalytics(
-      new Date(startDate),
-      new Date(endDate),
-      productId,
-      locationId
-    );
-  }
-
-  @Get('analytics/trends/:productId')
-  async getStockMovementTrends(
-    @Param('productId') productId: string,
-    @Query('locationId') locationId?: string,
     @Query('days') days = 30
   ) {
     return this.inventoryService.getStockMovementTrends(productId, locationId, +days);

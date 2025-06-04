@@ -4,9 +4,26 @@ import helmet from "helmet";
 import { ValidationPipe } from "@nestjs/common";
 import { AllExceptionsFilter } from "utils/exceptions.filter";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { WinstonModule } from "nest-winston";
+import { winstonLoggerOptions } from "./logger.config";
+
+import { GlobalExceptionFilter } from './filters/http-exception.filter';
+import { Logger } from "winston";
+
+import { NestFactory } from '@nestjs/core';
+
+import { AppConfigService } from './config/config.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  app.useGlobalFilters(new GlobalExceptionFilter(app.get(Logger)));
+
+    logger: WinstonModule.createLogger(winstonLoggerOptions),
+  });
+
   const { httpAdapter } = app.get(HttpAdapterHost);
 
   // CORS configuration
@@ -50,5 +67,14 @@ async function bootstrap() {
   SwaggerModule.setup("api/docs", app, document);
 
   await app.listen(3000);
+}
+bootstrap();
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const configService = app.get(AppConfigService);
+  
+  await app.listen(configService.port);
+  console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();
