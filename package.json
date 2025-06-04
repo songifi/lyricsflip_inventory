@@ -39,7 +39,9 @@
     "systeminformation": "^5.27.1",
     "twilio": "^5.7.0",
     "typeorm": "^0.3.24",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
+
   },
   "devDependencies": {
     "@types/cron": "^2.0.1",
