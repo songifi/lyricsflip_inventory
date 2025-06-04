@@ -39,9 +39,14 @@
     "multer": "^1.4.5-lts.1",
     "nanoid": "^5.1.5",
     "pg": "^8.16.0",
+    "nest-winston": "^1.10.2",
+    "pg": "^8.11.3",
     "systeminformation": "^5.27.1",
     "twilio": "^5.7.0",
     "typeorm": "^0.3.24"
+    "typeorm": "^0.3.24",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/cron": "^2.0.1",

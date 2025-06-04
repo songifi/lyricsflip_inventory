@@ -4,9 +4,22 @@ import helmet from "helmet";
 import { ValidationPipe } from "@nestjs/common";
 import { AllExceptionsFilter } from "utils/exceptions.filter";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { WinstonModule } from "nest-winston";
+import { winstonLoggerOptions } from "./logger.config";
+
+import { GlobalExceptionFilter } from './filters/http-exception.filter';
+import { Logger } from "winston";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  app.useGlobalFilters(new GlobalExceptionFilter(app.get(Logger)));
+
+    logger: WinstonModule.createLogger(winstonLoggerOptions),
+  });
+
   const { httpAdapter } = app.get(HttpAdapterHost);
 
   // CORS configuration
