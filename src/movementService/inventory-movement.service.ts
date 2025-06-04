@@ -25,6 +25,7 @@ export class InventoryMovementService {
     private readonly dataSource: DataSource,
     @Inject(forwardRef(() => AlertingService))
     private readonly alertingService: AlertingService,
+    private readonly stockAlertService: StockAlertService,
   ) {}
 
   // Enhanced stock operations with approval workflow
@@ -276,56 +277,8 @@ export class InventoryMovementService {
    * @param stockLevel StockLevel entity
    */
   private async checkStockAlerts(stockLevel: StockLevel): Promise<void> {
-    // Check for low stock
-    if (stockLevel.quantity <= stockLevel.minStockLevel) {
-      // Check if alert already exists and is active
-      let alert = await this.alertRepository.findOne({
-        where: {
-          productId: stockLevel.productId,
-          locationId: stockLevel.locationId,
-          type: AlertType.LOW_STOCK,
-          status: AlertStatus.ACTIVE,
-        },
-      });
-      if (!alert) {
-        alert = this.alertRepository.create({
-          type: AlertType.LOW_STOCK,
-          status: AlertStatus.ACTIVE,
-          productId: stockLevel.productId,
-          locationId: stockLevel.locationId,
-          message: `Low stock for product ${stockLevel.productId} at location ${stockLevel.locationId}. Current: ${stockLevel.quantity}, Threshold: ${stockLevel.minStockLevel}`,
-          currentQuantity: stockLevel.quantity,
-          thresholdQuantity: stockLevel.minStockLevel,
-        });
-        await this.alertRepository.save(alert);
-        // Notify via AlertingService
-        await this.alertingService.sendAlert({
-          type: 'LOW_STOCK',
-          severity: 'HIGH',
-          message: alert.message,
-          details: {
-            productId: stockLevel.productId,
-            locationId: stockLevel.locationId,
-            currentQuantity: stockLevel.quantity,
-            thresholdQuantity: stockLevel.minStockLevel,
-          },
-        });
-      }
-    } else {
-      // Resolve any active low stock alert if stock is now sufficient
-      const alert = await this.alertRepository.findOne({
-        where: {
-          productId: stockLevel.productId,
-          locationId: stockLevel.locationId,
-          type: AlertType.LOW_STOCK,
-          status: AlertStatus.ACTIVE,
-        },
-      });
-      if (alert) {
-        alert.status = AlertStatus.RESOLVED;
-        await this.alertRepository.save(alert);
-      }
-    }
+    // Delegate all alert logic to StockAlertService
+    await this.stockAlertService.checkAndCreateAlerts(stockLevel);
   }
 
   // Batch tracking
