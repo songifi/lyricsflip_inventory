@@ -7,8 +7,11 @@ import {
   UpdateDateColumn,
   Index,
   ManyToOne,
+  ManyToMany,
   JoinColumn,
 } from "typeorm";
+
+import { Category } from "src/categories/entities/category.entity";
 
 export enum ProductType {
   COTTON_WOOL = "cotton_wool",
@@ -191,6 +194,9 @@ export class Product {
 
   @Column({ type: "timestamp", nullable: true })
   discontinuedAt: Date;
+
+  @ManyToMany(() => Category, (category) => category.products)
+  categories: Category[];
 
   // Computed properties
   get isInStock(): boolean {
