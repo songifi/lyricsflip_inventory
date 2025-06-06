@@ -2,6 +2,100 @@
 
 A comprehensive inventory management system built with NestJS.
 
+## 🚀 Development Setup
+
+### Prerequisites
+- Node.js (v16 or later)
+- npm (v8 or later) or yarn
+- TypeScript (v4.6.0 or later)
+- PostgreSQL (or your preferred database)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd lyricsflip_inventory
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Update the .env file with your configuration
+   ```
+
+4. Run database migrations:
+   ```bash
+   npm run migration:run
+   ```
+
+### Development
+
+- Start the development server:
+  ```bash
+  npm run start:dev
+  ```
+
+- Lint your code:
+  ```bash
+  npm run lint
+  ```
+
+- Format your code:
+  ```bash
+  npm run format
+  ```
+
+- Run tests:
+  ```bash
+  npm test
+  ```
+
+### Building for Production
+
+```bash
+# Build the project
+npm run build
+
+# Start the production server
+npm run start:prod
+```
+
+## 🛠️ Code Quality
+
+This project uses:
+- ESLint for code linting
+- Prettier for code formatting
+- TypeScript for type safety
+- Jest for testing
+
+### Linting and Formatting
+
+- Run ESLint:
+  ```bash
+  npm run lint
+  ```
+
+- Run Prettier:
+  ```bash
+  npm run format
+  ```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
 ## Modules
 
 ### System Configuration Module
