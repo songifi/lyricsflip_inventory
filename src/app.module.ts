@@ -1,4 +1,3 @@
-
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -14,22 +13,15 @@ import { PreferenceModule } from "./preference/preference.module";
 import { SystemConfigModule } from "./system-config/system-config.module";
 import { LoggingMiddleware } from "./middleware/logging.middleware";
 import configuration from "./config/configuration";
-import { Module } from '@nestjs/common';
 import { AppConfigModule } from './config/config.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
-
-@Module({
-  imports: [AppConfigModule],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
+import { IntegrationModule } from './integration/integration.module';
 
 
 @Module({
   imports: [
+    AppConfigModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ".env",
@@ -64,7 +56,10 @@ export class AppModule {}
     NotificationModule,
     PreferenceModule,
     SystemConfigModule,
+    IntegrationModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
