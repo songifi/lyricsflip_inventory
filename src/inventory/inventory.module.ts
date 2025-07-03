@@ -11,6 +11,7 @@ import { InventoryService } from './inventory.service';
 import { StockLevelService } from './stock-level.service';
 import { InventoryController } from './inventory.controller';
 import { ValuationController } from './valuation.controller';
+import { InventoryGateway } from './inventory.gateway';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { ValuationController } from './valuation.controller';
       Reservation,
     ]),
   ],
-  providers: [InventoryService, StockLevelService],
+  providers: [InventoryService, StockLevelService, InventoryGateway],
   controllers: [InventoryController, ValuationController],
 })
 export class InventoryModule {}

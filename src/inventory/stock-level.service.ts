@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ModuleRef } from '@nestjs/core';
 
 import { InventoryItem } from './entities/inventory-item.entity';
 import { Reservation, ReservationStatus } from './entities/reservation.entity';
 import { StockAdjustment } from './entities/stock-adjustment.entity';
+import { InventoryGateway } from './inventory.gateway';
 
 @Injectable()
 export class StockLevelService {
+  private inventoryGateway: InventoryGateway;
+
   constructor(
     @InjectRepository(InventoryItem)
     private readonly itemRepo: Repository<InventoryItem>,
@@ -15,7 +19,12 @@ export class StockLevelService {
     private readonly resRepo: Repository<Reservation>,
     @InjectRepository(StockAdjustment)
     private readonly adjRepo: Repository<StockAdjustment>,
+    private readonly moduleRef: ModuleRef,
   ) {}
+
+  onModuleInit() {
+    this.inventoryGateway = this.moduleRef.get(InventoryGateway, { strict: false });
+  }
 
   /** Real-time stock levels for a SKU/location */
   async getRealTimeStock(sku: string, locationId: string) {
@@ -45,23 +54,31 @@ export class StockLevelService {
       throw new BadRequestException(`Insufficient available stock (requested ${quantity}, available ${available})`);
     }
     const res = this.resRepo.create({ sku, locationId, quantity });
-    return this.resRepo.save(res);
+    const saved = await this.resRepo.save(res);
+    // Emit stock update
+    const allStock = await this.itemRepo.find();
+    this.inventoryGateway.broadcastStockUpdate(allStock);
+    return saved;
   }
 
   /** Release an active reservation */
   async releaseReservation(reservationId: string) {
-    const res = await this.resRepo.findOne(reservationId);
+    const res = await this.resRepo.findOne({ where: { id: reservationId } });
     if (!res) throw new NotFoundException(`Reservation ${reservationId} not found`);
     if (res.status !== ReservationStatus.ACTIVE) {
       throw new BadRequestException(`Reservation is not active`);
     }
     res.status = ReservationStatus.RELEASED;
-    return this.resRepo.save(res);
+    const saved = await this.resRepo.save(res);
+    // Emit stock update
+    const allStock = await this.itemRepo.find();
+    this.inventoryGateway.broadcastStockUpdate(allStock);
+    return saved;
   }
 
   /** Fulfill a reservation: decrement onHand and mark fulfilled */
   async fulfillReservation(reservationId: string) {
-    const res = await this.resRepo.findOne(reservationId);
+    const res = await this.resRepo.findOne({ where: { id: reservationId } });
     if (!res) throw new NotFoundException(`Reservation ${reservationId} not found`);
     if (res.status !== ReservationStatus.ACTIVE) {
       throw new BadRequestException(`Reservation is not active`);
@@ -79,7 +96,11 @@ export class StockLevelService {
     await this.itemRepo.save(item);
 
     res.status = ReservationStatus.FULFILLED;
-    return this.resRepo.save(res);
+    const saved = await this.resRepo.save(res);
+    // Emit stock update
+    const allStock = await this.itemRepo.find();
+    this.inventoryGateway.broadcastStockUpdate(allStock);
+    return saved;
   }
 
   /**
@@ -111,6 +132,10 @@ export class StockLevelService {
       reason,
     });
     await this.adjRepo.save(adj);
+
+    // Emit stock update
+    const allStock = await this.itemRepo.find();
+    this.inventoryGateway.broadcastStockUpdate(allStock);
 
     return { message: 'Reconciled', difference: diff, adjustment: adj };
   }

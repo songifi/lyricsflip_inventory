@@ -6,6 +6,7 @@ import { InventoryItem } from './entities/inventory-item.entity';
 import { StockMovement } from './entities/stock-movement.entity';
 import { StockAdjustment } from './entities/stock-adjustment.entity';
 import { ValuationRecord, ValuationMethod } from './entities/valuation-record.entity';
+import { InventoryGateway } from './inventory.gateway';
 
 import { MoveStockDto, TransferStockDto, AdjustStockDto } from './dto/inventory.dto';
 
@@ -20,6 +21,7 @@ export class InventoryService {
     private readonly adjustmentRepo: Repository<StockAdjustment>,
     @InjectRepository(ValuationRecord)
     private readonly valuationRepo: Repository<ValuationRecord>,
+    private readonly inventoryGateway: InventoryGateway,
   ) {}
 
 
@@ -32,6 +34,9 @@ export class InventoryService {
       toLocation: dto.toLocation,
       quantity: dto.quantity,
     });
+    // Emit stock update
+    const stockLevels = await this.getStockLevels();
+    this.inventoryGateway.broadcastStockUpdate(stockLevels.data);
     return { success: true, message: 'Stock moved successfully', data: result };
   }
 
@@ -45,6 +50,9 @@ export class InventoryService {
     for (const move of dto.movements) {
       results.push(await this.moveStock(move));
     }
+    // Emit stock update after all moves
+    const stockLevels = await this.getStockLevels();
+    this.inventoryGateway.broadcastStockUpdate(stockLevels.data);
     return { success: true, message: 'Stock transfer completed', data: results };
   }
 
@@ -56,6 +64,9 @@ export class InventoryService {
       quantityChange: dto.quantityChange,
       reason: dto.reason,
     });
+    // Emit stock update
+    const stockLevels = await this.getStockLevels();
+    this.inventoryGateway.broadcastStockUpdate(stockLevels.data);
     return { success: true, message: 'Stock adjusted', data: result };
   }
 
