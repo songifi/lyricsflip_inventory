@@ -16,6 +16,7 @@ import configuration from "./config/configuration";
 import { AppConfigModule } from './config/config.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { BarcodeModule } from './barcode/barcode.module';
 import { IntegrationModule } from './integration/integration.module';
 
 
@@ -56,6 +57,7 @@ import { IntegrationModule } from './integration/integration.module';
     NotificationModule,
     PreferenceModule,
     SystemConfigModule,
+    BarcodeModule,
     IntegrationModule,
   ],
   controllers: [AppController],
