@@ -1,4 +1,3 @@
-
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -18,6 +17,7 @@ import { Module } from '@nestjs/common';
 import { AppConfigModule } from './config/config.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { BarcodeModule } from './barcode/barcode.module';
 
 
 @Module({
@@ -64,6 +64,7 @@ export class AppModule {}
     NotificationModule,
     PreferenceModule,
     SystemConfigModule,
+    BarcodeModule,
   ],
 })
 export class AppModule implements NestModule {
