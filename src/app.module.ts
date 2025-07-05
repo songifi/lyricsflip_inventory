@@ -18,6 +18,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BarcodeModule } from './barcode/barcode.module';
 import { IntegrationModule } from './integration/integration.module';
+import { ProductManagementModule } from "./product management/product-management.module";
 
 
 @Module({
@@ -59,6 +60,7 @@ import { IntegrationModule } from './integration/integration.module';
     SystemConfigModule,
     BarcodeModule,
     IntegrationModule,
+    ProductManagementModule,
   ],
   controllers: [AppController],
   providers: [AppService],
