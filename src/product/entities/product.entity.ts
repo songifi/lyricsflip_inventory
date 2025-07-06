@@ -1,17 +1,29 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
+
+import { Batch } from '../../batch/entities/batch.entity';
 
 export enum ProductStatus {
   DRAFT = 'draft',
   ACTIVE = 'active',
   DISCONTINUED = 'discontinued',
   OUT_OF_STOCK = 'out_of_stock',
-  ARCHIVED = 'archived'
+  ARCHIVED = 'archived',
 }
 
 export enum ProductCondition {
   NEW = 'new',
   USED = 'used',
-  REFURBISHED = 'refurbished'
+  REFURBISHED = 'refurbished',
 }
 
 @Entity('products')
@@ -33,6 +45,9 @@ export class Product {
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
+
+  @OneToMany(() => Batch, batch => batch.product)
+  batches: Batch[];
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   costPrice: number;
@@ -74,7 +89,7 @@ export class Product {
   @Column({
     type: 'enum',
     enum: ProductStatus,
-    default: ProductStatus.DRAFT
+    default: ProductStatus.DRAFT,
   })
   status: ProductStatus;
 
@@ -101,7 +116,7 @@ export class Product {
   @Column({
     type: 'enum',
     enum: ProductCondition,
-    default: ProductCondition.NEW
+    default: ProductCondition.NEW,
   })
   condition: ProductCondition;
 
