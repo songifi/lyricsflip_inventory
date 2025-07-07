@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ReportService } from './report.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
@@ -30,5 +30,13 @@ export class ReportController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.reportService.remove(+id);
+  }
+
+  @Get(':id/export')
+  async exportReport(
+    @Param('id') id: string,
+    @Query('format') format: 'pdf' | 'excel' = 'excel',
+  ) {
+    return this.reportService.generateReport(id, format);
   }
 }
