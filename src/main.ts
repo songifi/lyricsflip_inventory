@@ -10,29 +10,26 @@ import { winstonLoggerOptions } from "./logger.config";
 import { GlobalExceptionFilter } from './filters/http-exception.filter';
 import { Logger } from "winston";
 
-import { NestFactory } from '@nestjs/core';
-
 import { AppConfigService } from './config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
+    logger: WinstonModule.createLogger(winstonLoggerOptions),
   });
 
   app.useGlobalFilters(new GlobalExceptionFilter(app.get(Logger)));
 
-    logger: WinstonModule.createLogger(winstonLoggerOptions),
-  });
-
   const { httpAdapter } = app.get(HttpAdapterHost);
+  const configService = app.get(AppConfigService);
 
-  // CORS configuration
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Configure based on environment
+    origin: process.env.FRONTEND_URL || "http://localhost:5173", 
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    credentials: true, // Enable if you need to send cookies
-    maxAge: 3600, // Cache preflight requests for 1 hour
+    credentials: true, 
+    maxAge: 3600,
   });
 
   app.useGlobalPipes(
@@ -42,9 +39,11 @@ async function bootstrap() {
       transform: true,
     })
   );
+
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
-  // Security headers
-  app.use(helmet()); // Add helmet for security headers
+
+
+  app.use(helmet());
 
   const config = new DocumentBuilder()
     .setTitle("Inventory Management System")
@@ -66,15 +65,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api/docs", app, document);
 
-  await app.listen(3000);
-}
-bootstrap();
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const configService = app.get(AppConfigService);
-  
   await app.listen(configService.port);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
+
 bootstrap();
