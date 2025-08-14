@@ -13,6 +13,9 @@ dist/
 # Dependency locks
 package-lock.json
 
+# Jest-coverage
+./coverage
+
 # OS files
 .DS_Store
 Thumbs.db
