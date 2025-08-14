@@ -19,6 +19,19 @@ module.exports = {
       lines: 80,
     },
   },
+  reporters: [
+    'default',
+    [
+      'jest-html-reporters',
+      {
+        pageTitle: 'Test Report',
+        outputPath: './test/html_report/test-report.html',
+        includeFailureMsg: true,
+        includeConsoleLog: true,
+        expand: true,
+      },
+    ],
+  ],
 
   setupFiles: ['dotenv/config'], // <-- Loads .env.test before tests
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
