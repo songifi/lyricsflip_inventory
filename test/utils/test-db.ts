@@ -9,7 +9,7 @@ export const testDataSource = new DataSource({
   host: process.env.TEST_DB_HOST || 'localhost',
   port: +(process.env.TEST_DB_PORT || 5432),
   username: process.env.TEST_DB_USER || 'test_user',
-  password: process.env.TEST_DB_PASS || 'test_password',
+  password: process.env.TEST_DB_PASS || 'test_pass',
   database: process.env.TEST_DB_NAME || 'test_db',
   synchronize: true, // Only for testing!
   entities: [Supplier, PurchaseOrder], // add more entities as needed
