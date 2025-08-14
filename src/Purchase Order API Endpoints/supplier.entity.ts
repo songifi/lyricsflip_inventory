@@ -1,3 +1,6 @@
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import { PurchaseOrder } from "./purchase-order.entity";
+
 @Entity()
 export class Supplier {
   @PrimaryGeneratedColumn()

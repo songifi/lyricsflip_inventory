@@ -1,27 +1,35 @@
 module.exports = {
   roots: ['<rootDir>/src', '<rootDir>/test'],
-  testMatch: [
-    '**/?(*.)+(spec|test).[jt]s?(x)',
-    '**/integration/**/*.test.[jt]s?(x)',
-    '**/unit/**/*.test.[jt]s?(x)'
-  ],
+  testMatch: ['**/unit/**/*.test.[jt]s', '**/integration/**/*.test.[jt]s'],
   moduleFileExtensions: ['js', 'json', 'ts'],
   testEnvironment: 'node',
-  coverageDirectory: 'coverage',
+  coverageDirectory: '<rootDir>/test/coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
   collectCoverageFrom: [
     'src/**/*.{js,ts}',
     '!src/**/*.module.ts',
     '!src/main.ts',
-    '!src/**/index.ts'
+    '!src/**/index.ts',
   ],
+  coverageThreshold: {
+    global: {
+      statements: 80,
+      branches: 75,
+      functions: 80,
+      lines: 80,
+    },
+  },
+
+  setupFiles: ['dotenv/config'], // <-- Loads .env.test before tests
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/tsconfig.jest.json',
+        diagnostics: false,
+      },
+    ],
   },
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.jest.json',
-      diagnostics: false
-    }
-  },
+  verbose: true, // <-- Gives clearer test output
 };
