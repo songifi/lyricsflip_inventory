@@ -1,3 +1,6 @@
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Supplier } from "./supplier.entity";
+
 @Entity()
 export class PurchaseOrder {
   @PrimaryGeneratedColumn()
