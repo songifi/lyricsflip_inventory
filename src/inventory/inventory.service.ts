@@ -8,6 +8,7 @@ import { StockAdjustment } from './entities/stock-adjustment.entity';
 import { ValuationRecord, ValuationMethod } from './entities/valuation-record.entity';
 
 import { MoveStockDto, TransferStockDto, AdjustStockDto } from './dto/inventory.dto';
+import { InventoryGateway } from './inventory.gateway';
 
 @Injectable()
 export class InventoryService {
@@ -20,6 +21,7 @@ export class InventoryService {
     private readonly adjustmentRepo: Repository<StockAdjustment>,
     @InjectRepository(ValuationRecord)
     private readonly valuationRepo: Repository<ValuationRecord>,
+    private readonly inventoryGateway: InventoryGateway,
   ) {}
 
 
@@ -32,6 +34,16 @@ export class InventoryService {
       toLocation: dto.toLocation,
       quantity: dto.quantity,
     });
+    
+    // Emit real-time movement event
+    this.inventoryGateway.emitInventoryMovement({
+      sku: dto.sku,
+      fromLocation: dto.fromLocation,
+      toLocation: dto.toLocation,
+      quantity: dto.quantity,
+      timestamp: new Date(),
+    });
+    
     return { success: true, message: 'Stock moved successfully', data: result };
   }
 
@@ -64,8 +76,29 @@ export class InventoryService {
     if (!item) {
       item = this.itemRepo.create({ sku, locationId, quantity: 0 });
     }
+    const previousQuantity = item.quantity;
     item.quantity += change;
     await this.itemRepo.save(item);
+    
+    // Emit real-time stock update
+    this.inventoryGateway.emitStockUpdate({
+      sku,
+      locationId,
+      quantity: item.quantity,
+      previousQuantity,
+      change,
+    });
+    
+    // Check for low stock alert (assuming threshold of 10)
+    const threshold = 10;
+    if (item.quantity <= threshold && previousQuantity > threshold) {
+      this.inventoryGateway.emitLowStockAlert({
+        sku,
+        locationId,
+        currentQuantity: item.quantity,
+        threshold,
+      });
+    }
   }
 
   // ——— Valuation helpers ———

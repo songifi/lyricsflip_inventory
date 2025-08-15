@@ -11,6 +11,11 @@ import { InventoryService } from './inventory.service';
 import { StockLevelService } from './stock-level.service';
 import { InventoryController } from './inventory.controller';
 import { ValuationController } from './valuation.controller';
+import { InventoryGateway } from './inventory.gateway';
+import { DashboardService } from './dashboard.service';
+import { ConnectionManagerService } from './connection-manager.service';
+import { WebSocketController } from './websocket.controller';
+import { ConnectionCleanupTask } from './tasks/connection-cleanup.task';
 
 @Module({
   imports: [
@@ -22,7 +27,15 @@ import { ValuationController } from './valuation.controller';
       Reservation,
     ]),
   ],
-  providers: [InventoryService, StockLevelService],
-  controllers: [InventoryController, ValuationController],
+  providers: [
+    InventoryService,
+    StockLevelService,
+    InventoryGateway,
+    DashboardService,
+    ConnectionManagerService,
+    ConnectionCleanupTask,
+  ],
+  controllers: [InventoryController, ValuationController, WebSocketController],
+  exports: [InventoryGateway, DashboardService],
 })
 export class InventoryModule {}
