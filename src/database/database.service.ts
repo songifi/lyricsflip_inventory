@@ -24,14 +24,11 @@ export class DatabaseService implements OnModuleInit {
   }
 
   private async logConnectionInfo() {
+    // const { driver } = this.dataSource;
+    // console.log(driver);
     try {
       const { driver } = this.dataSource;
-      this.logger.log(`Connected to ${driver.database} on ${driver.options.host}:${driver.options.port}`);
-      
-      // Log pool information
-      if (driver.master) {
-        this.logger.log(`Connection pool: max ${driver.options.extra?.max || 'default'}`);
-      }
+      this.logger.log(`Connected to ${driver.database} on`);
     } catch (error) {
       this.logger.warn('Could not log connection info', error.message);
     }
@@ -48,7 +45,7 @@ export class DatabaseService implements OnModuleInit {
   }> {
     try {
       const isConnected = this.dataSource.isInitialized;
-      
+
       return {
         isConnected,
         database: this.dataSource.options.database as string,
@@ -95,7 +92,9 @@ export class DatabaseService implements OnModuleInit {
    */
   async createSchema(schemaName: string): Promise<void> {
     try {
-      await this.dataSource.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
+      await this.dataSource.query(
+        `CREATE SCHEMA IF NOT EXISTS "${schemaName}"`,
+      );
       this.logger.log(`Schema created: ${schemaName}`);
     } catch (error) {
       this.logger.error(`Failed to create schema: ${schemaName}`, error);
