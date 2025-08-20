@@ -12,26 +12,26 @@ import { DatabaseService } from './database.service';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const dbConfig = configService.get('database');
-        
+
         return {
           ...dbConfig,
           // Custom connection name for multi-tenancy if needed
           name: 'default',
-          
+
           // Error handling
           retryAttempts: 3,
           retryDelay: 3000,
           autoLoadEntities: true,
-          
+
           // Connection event handlers
           subscribers: [],
-          
+
           // Advanced pooling configuration
-          poolSize: parseInt(process.env.DB_POOL_MAX, 10) || 10,
-          
+          poolSize: parseInt(process.env.DB_POOL_MAX ?? '10', 10) || 10,
+
           // Query timeout
           acquireTimeout: 60000,
-          
+
           // Keep connection alive
           keepConnectionAlive: true,
         };
