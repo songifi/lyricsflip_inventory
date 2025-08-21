@@ -12,6 +12,7 @@ import { InventoryItemImage } from './entities/inventory-item-image.entity';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
 import { UpdateInventoryItemDto } from './dto/update-inventory-item.dto';
 import { InventoryItemQueryDto } from './dto/inventory-item-query.dto';
+import { Category } from '../categories/category.entity';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -28,13 +29,14 @@ export class InventoryItemsService {
     private inventoryItemRepository: Repository<InventoryItem>,
     @InjectRepository(InventoryItemImage)
     private inventoryItemImageRepository: Repository<InventoryItemImage>,
+    @InjectRepository(Category)
+    private categoryRepository: Repository<Category>,
   ) {}
 
   async create(
     createInventoryItemDto: CreateInventoryItemDto,
     companyId: string,
   ): Promise<InventoryItem> {
-    // Check if SKU already exists for this company
     const existingItem = await this.inventoryItemRepository.findOne({
       where: { sku: createInventoryItemDto.sku, companyId },
     });
@@ -55,21 +57,20 @@ export class InventoryItemsService {
     companyId: string,
     queryDto: InventoryItemQueryDto,
   ): Promise<PaginatedResult<InventoryItem>> {
-    const { page, limit, search, category, status, location, tags, sortBy, sortOrder } = queryDto;
+    const { page, limit, search, category, categoryId, status, location, tags, sortBy, sortOrder } = queryDto;
 
     const queryBuilder = this.inventoryItemRepository
       .createQueryBuilder('item')
       .leftJoinAndSelect('item.images', 'images')
       .where('item.companyId = :companyId', { companyId });
 
-    this.applyFilters(queryBuilder, { search, category, status, location, tags });
+    await this.applyFilters(queryBuilder, companyId, { search, category, categoryId, status, location, tags });
 
     // Apply sorting
     const allowedSortFields = ['name', 'sku', 'category', 'currentStock', 'createdAt', 'updatedAt'];
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
     queryBuilder.orderBy(`item.${sortField}`, sortOrder);
 
-    // Apply pagination
     const skip = (page - 1) * limit;
     queryBuilder.skip(skip).take(limit);
 
@@ -165,8 +166,6 @@ export class InventoryItemsService {
     companyId: string,
   ): Promise<InventoryItemImage> {
     const item = await this.findOne(inventoryItemId, companyId);
-
-    // If this is set as primary, unset other primary images
     if (imageData.isPrimary) {
       await this.inventoryItemImageRepository.update(
         { inventoryItemId },
@@ -187,7 +186,6 @@ export class InventoryItemsService {
     inventoryItemId: string,
     companyId: string,
   ): Promise<void> {
-    // Verify the item belongs to the company
     await this.findOne(inventoryItemId, companyId);
 
     const image = await this.inventoryItemImageRepository.findOne({
@@ -221,17 +219,50 @@ export class InventoryItemsService {
     return result.map(r => r.location).filter(Boolean);
   }
 
-  private applyFilters(
+  private async getCategoryAndDescendantNames(rootId: string, companyId: string): Promise<string[]> {
+    const cats = await this.categoryRepository.find({ where: { companyId } });
+    if (!cats.length) return [];
+
+    const byId = new Map(cats.map(c => [c.id, c] as const));
+    if (!byId.has(rootId)) return [];
+
+    const childrenMap = new Map<string, string[]>();
+    cats.forEach(c => {
+      if (!c.parentId) return;
+      const arr = childrenMap.get(c.parentId) ?? [];
+      arr.push(c.id);
+      childrenMap.set(c.parentId, arr);
+    });
+
+    const resultIds: string[] = [];
+    const stack = [rootId];
+    while (stack.length) {
+      const id = stack.pop()!;
+      resultIds.push(id);
+      const kids = childrenMap.get(id) ?? [];
+      kids.forEach(k => stack.push(k));
+    }
+    const names: string[] = [];
+    resultIds.forEach(id => {
+      const c = byId.get(id);
+      if (c?.name) names.push(c.name);
+    });
+    return names;
+  }
+
+  private async applyFilters(
     queryBuilder: SelectQueryBuilder<InventoryItem>,
+    companyId: string,
     filters: {
       search?: string;
       category?: string;
+      categoryId?: string;
       status?: InventoryItemStatus;
       location?: string;
       tags?: string;
     },
-  ): void {
-    const { search, category, status, location, tags } = filters;
+  ): Promise<void> {
+    const { search, category, categoryId, status, location, tags } = filters;
 
     if (search) {
       queryBuilder.andWhere(
@@ -240,7 +271,14 @@ export class InventoryItemsService {
       );
     }
 
-    if (category) {
+    if (categoryId) {
+      const names = await this.getCategoryAndDescendantNames(categoryId, companyId);
+      if (names.length > 0) {
+        queryBuilder.andWhere('item.category IN (:...categories)', { categories: names });
+      } else {
+        queryBuilder.andWhere('1=0');
+      }
+    } else if (category) {
       queryBuilder.andWhere('item.category = :category', { category });
     }
 

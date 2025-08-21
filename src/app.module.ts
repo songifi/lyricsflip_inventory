@@ -6,6 +6,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { User } from './users/user.entity';
+import { InventoryItemsModule } from './inventory-items/inventory-items.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -19,7 +21,7 @@ import { User } from './users/user.entity';
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
-        entities: [User],
+        autoLoadEntities: true,
         synchronize: true, // disable in production and run migrations instead
       }),
     }),
@@ -34,6 +36,8 @@ import { User } from './users/user.entity';
     }),
     UsersModule,
     AuthModule,
+    InventoryItemsModule,
+    CategoriesModule,
   ],
   providers: [
     // Global rate-limiting guard
