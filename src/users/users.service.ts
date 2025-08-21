@@ -1,44 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
+import { Role } from '../rbac/entities/role.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   constructor(
-
-    private readonly auditLogService: AuditLogService,
-    // Other dependencies...
-  ) {}
-
-  async updateUser(id: string, updateData: any, currentUser: any): Promise<any> {
-    const oldUser = await this.findById(id);
-    
-    // Perform the update
-    const updatedUser = await this.update(id, updateData);
-
-    // Manual audit logging for complex operations
-    await this.auditLogService.logActivity(
-      currentUser.id,
-      AuditAction.UPDATE,
-      'User',
-      id,
-      oldUser,
-      updatedUser,
-      { reason: 'User profile update' }
-    );
-
-    return updatedUser;
     @InjectRepository(User) private readonly repo: Repository<User>,
   ) {}
 
   async findByEmail(email: string) {
-    return this.repo.findOne({ where: { email: email.toLowerCase() } });
+    return this.repo.findOne({
+      where: { email: email.toLowerCase() },
+      relations: ['roles'],
+    });
   }
 
   async findById(id: string) {
-    return this.repo.findOne({ where: { id } });
+    return this.repo.findOne({ where: { id }, relations: ['roles'] });
   }
 
   async createUser(params: { email: string; name: string; password: string }) {
@@ -52,6 +33,41 @@ export class UsersService {
     });
     await user.setPassword(params.password);
     return this.repo.save(user);
+  }
+
+  async assignRole(userId: string, role: Role) {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const currentRoles = user.roles ?? [];
+    const hasRole = currentRoles.some((r) => r.id === role.id);
+    if (!hasRole) {
+      currentRoles.push(role);
+      user.roles = currentRoles;
+      await this.repo.save(user);
+    }
+    return user;
+  }
+
+  async removeRole(userId: string, roleId: string) {
+    const exists = await this.repo.exists({ where: { id: userId } });
+    if (!exists) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Ensure proper type for relation removal (ids are UUID strings in this codebase)
+    const normalizedRoleId: string = String(roleId);
+
+    await this.repo.manager
+      .createQueryBuilder()
+      .relation(User, 'roles')
+      .of(userId)
+      .remove(normalizedRoleId);
+
+    // Return updated user with roles
+    return this.findById(userId);
   }
 
   async updateRefreshToken(userId: string, refreshToken: string | null) {

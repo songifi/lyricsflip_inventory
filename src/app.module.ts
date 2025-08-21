@@ -6,6 +6,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { User } from './users/user.entity';
+import { RbacModule } from './rbac/rbac.module';
+import { Role } from './rbac/entities/role.entity';
+import { Permission } from './rbac/entities/permission.entity';
 
 @Module({
   imports: [
@@ -14,12 +17,12 @@ import { User } from './users/user.entity';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         type: 'postgres',
-        host: process.env.DB_HOST,
-        port: Number(process.env.DB_PORT),
-        username: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        entities: [User],
+        host: cfg.get<string>('DB_HOST') ?? process.env.DB_HOST,
+        port: Number(cfg.get<string>('DB_PORT') ?? process.env.DB_PORT),
+        username: cfg.get<string>('DB_USERNAME') ?? process.env.DB_USERNAME,
+        password: cfg.get<string>('DB_PASSWORD') ?? process.env.DB_PASSWORD,
+        database: cfg.get<string>('DB_NAME') ?? process.env.DB_NAME,
+        entities: [User, Role, Permission],
         synchronize: true, // disable in production and run migrations instead
       }),
     }),
@@ -33,6 +36,7 @@ import { User } from './users/user.entity';
       ],
     }),
     UsersModule,
+    RbacModule,
     AuthModule,
   ],
   providers: [

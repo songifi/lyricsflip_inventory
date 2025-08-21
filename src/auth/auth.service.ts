@@ -26,10 +26,12 @@ export class AuthService {
 
   async register(email: string, name: string, password: string) {
     const user = await this.users.createUser({ email, name, password });
+    const roles = (user.roles ?? []).map((r) => r.name);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       name: user.name,
+      roles,
     };
     const tokens = await this.signTokens(payload);
     await this.users.updateRefreshToken(user.id, tokens.refreshToken);
@@ -45,10 +47,12 @@ export class AuthService {
     const ok = await user.comparePassword(password);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
+    const roles = (user.roles ?? []).map((r) => r.name);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       name: user.name,
+      roles,
     };
     const tokens = await this.signTokens(payload);
     await this.users.updateRefreshToken(user.id, tokens.refreshToken);
@@ -65,10 +69,12 @@ export class AuthService {
     const user = await this.users.findById(userId);
     if (!user) throw new UnauthorizedException('User not found');
 
+    const roles = (user.roles ?? []).map((r) => r.name);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       name: user.name,
+      roles,
     };
     const tokens = await this.signTokens(payload);
     // rotate refresh token
