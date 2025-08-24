@@ -5,7 +5,11 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { User } from './users/user.entity';
+import { InventoryItemsModule } from './inventory-items/inventory-items.module';
+import { CategoriesModule } from './categories/categories.module';
 import { LocationsModule } from './locations/locations.module';
+
 
 @Module({
   imports: [
@@ -14,6 +18,11 @@ import { LocationsModule } from './locations/locations.module';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         type: 'postgres',
+        host: process.env.DB_HOST,
+        port: Number(process.env.DB_PORT),
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
         host: cfg.get<string>('DB_HOST'),
         port: Number(cfg.get<string>('DB_PORT')),
         username: cfg.get<string>('DB_USERNAME'),
@@ -34,6 +43,8 @@ import { LocationsModule } from './locations/locations.module';
     }),
     UsersModule,
     AuthModule,
+    InventoryItemsModule,
+    CategoriesModule,
     LocationsModule,
   ],
   providers: [
