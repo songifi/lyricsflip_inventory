@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/user.entity';
 import { InventoryItemsModule } from './inventory-items/inventory-items.module';
 import { CategoriesModule } from './categories/categories.module';
+import { LocationsModule } from './locations/locations.module';
+
 
 @Module({
   imports: [
@@ -21,6 +23,11 @@ import { CategoriesModule } from './categories/categories.module';
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
+        host: cfg.get<string>('DB_HOST'),
+        port: Number(cfg.get<string>('DB_PORT')),
+        username: cfg.get<string>('DB_USERNAME'),
+        password: cfg.get<string>('DB_PASSWORD'),
+        database: cfg.get<string>('DB_NAME'),
         autoLoadEntities: true,
         synchronize: true, // disable in production and run migrations instead
       }),
@@ -38,6 +45,7 @@ import { CategoriesModule } from './categories/categories.module';
     AuthModule,
     InventoryItemsModule,
     CategoriesModule,
+    LocationsModule,
   ],
   providers: [
     // Global rate-limiting guard
