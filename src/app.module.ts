@@ -6,9 +6,13 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { User } from './users/user.entity';
+import { RbacModule } from './rbac/rbac.module';
+import { Role } from './rbac/entities/role.entity';
+import { Permission } from './rbac/entities/permission.entity';
 import { InventoryItemsModule } from './inventory-items/inventory-items.module';
 import { CategoriesModule } from './categories/categories.module';
 import { LocationsModule } from './locations/locations.module';
+
 
 
 @Module({
@@ -18,6 +22,10 @@ import { LocationsModule } from './locations/locations.module';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         type: 'postgres',
+
+        
+        entities: [User, Role, Permission],
+
         host: process.env.DB_HOST,
         port: Number(process.env.DB_PORT),
         username: process.env.DB_USERNAME,
@@ -29,6 +37,7 @@ import { LocationsModule } from './locations/locations.module';
         password: cfg.get<string>('DB_PASSWORD'),
         database: cfg.get<string>('DB_NAME'),
         autoLoadEntities: true,
+
         synchronize: true, // disable in production and run migrations instead
       }),
     }),
@@ -42,6 +51,7 @@ import { LocationsModule } from './locations/locations.module';
       ],
     }),
     UsersModule,
+    RbacModule,
     AuthModule,
     InventoryItemsModule,
     CategoriesModule,

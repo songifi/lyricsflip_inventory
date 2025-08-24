@@ -1,4 +1,13 @@
-import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  Column,
+  Entity,
+  ManyToMany,
+  JoinTable,
+  PrimaryGeneratedColumn,
+  Relation,
+} from 'typeorm';
+import { Role } from '../rbac/entities/role.entity';
 import * as bcrypt from 'bcrypt';
 
 @Entity('users')
@@ -17,6 +26,20 @@ export class User {
 
   @Column({ type: 'text', nullable: true })
   refreshTokenHash: string | null;
+
+  @ManyToMany(() => Role, { cascade: ['insert'] })
+  @JoinTable({
+    name: 'user_roles',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'role_id',
+      referencedColumnName: 'id',
+    },
+  })
+  roles?: Relation<Role>[];
 
   @BeforeInsert()
   normalizeEmail() {
