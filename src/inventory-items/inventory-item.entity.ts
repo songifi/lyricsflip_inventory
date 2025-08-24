@@ -10,9 +10,16 @@ import {
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm';
-import { IsNotEmpty, IsNumber, IsOptional, Min, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  Min,
+  MaxLength,
+} from 'class-validator';
 import { Company } from '../companies/entities/company.entity'; // Adjust import path
 import { InventoryItemImage } from './inventory-item-image.entity';
+import { LocationItem } from '../locations/entities/location-item.entity';
 
 export enum InventoryItemStatus {
   ACTIVE = 'active',
@@ -122,6 +129,9 @@ export class InventoryItem {
     eager: false,
   })
   images: InventoryItemImage[];
+
+  @OneToMany(() => LocationItem, (locationItem) => locationItem.item)
+  locationItems?: LocationItem[];
 
   @CreateDateColumn()
   createdAt: Date;
