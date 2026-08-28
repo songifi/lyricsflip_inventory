@@ -12,6 +12,7 @@ import { Permission } from './rbac/entities/permission.entity';
 import { InventoryItemsModule } from './inventory-items/inventory-items.module';
 import { CategoriesModule } from './categories/categories.module';
 import { LocationsModule } from './locations/locations.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
 
 
 
@@ -56,6 +57,7 @@ import { LocationsModule } from './locations/locations.module';
     InventoryItemsModule,
     CategoriesModule,
     LocationsModule,
+    SuppliersModule,
   ],
   providers: [
     // Global rate-limiting guard
